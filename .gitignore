@@ -1,6 +1,46 @@
-﻿# Ignore model checkpoints and temporary files
-function_cnn.pth
-*.pth
+# Byte-compiled / packaging
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual envs
+.venv/
+venv/
+env/
+.python-version
+
+# Jupyter
 .ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Trained weights / large artifacts (regenerate via `python -m src.train`)
+*.pth
+*.pt
+*.onnx
+*.ckpt
+
+# Generated figures (regenerated at the end of training)
+training_curves.png
+predictions.png
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Gradio
+gradio_cached_examples/
+flagged/
