@@ -11,11 +11,12 @@ import random
 from io import BytesIO
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  (registers 3d projection)
 import numpy as np
 import torch
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  (registers 3d projection)
 from PIL import Image
 from torch.utils.data import Dataset
 

@@ -40,7 +40,7 @@ dev = [
 function-cnn-train = "src.train:main"
 
 [project.urls]
-Homepage = "https://github.com/raahimnawaz/func_class_-cnn"
+Homepage = "https://github.com/raahimnawaz/function-classifier-cnn"
 
 [tool.setuptools]
 packages = ["src"]
@@ -51,7 +51,11 @@ target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B"]
-ignore = ["E501"]  # line length handled by formatter
+ignore = [
+    "E501",   # line length handled by formatter
+    "E701",   # multi-statement on one line (colon) — common ML one-liner style
+    "E702",   # multi-statement on one line (semicolon) — common ML one-liner style
+]
 
 [tool.black]
 line-length = 100

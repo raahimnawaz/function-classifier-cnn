@@ -12,6 +12,7 @@ import os
 import random
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,9 +22,14 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from .data import (
-    FUNCTION_TYPES, FUNCTION_TYPES_3D, FEATURE_NAMES,
-    FunctionDataset, generate_function_2d, generate_function_3d,
-    plot_to_image_2d, plot_to_image_3d,
+    FEATURE_NAMES,
+    FUNCTION_TYPES,
+    FUNCTION_TYPES_3D,
+    FunctionDataset,
+    generate_function_2d,
+    generate_function_3d,
+    plot_to_image_2d,
+    plot_to_image_3d,
 )
 from .model import BaselineCNN, FunctionCNN
 
@@ -54,7 +60,7 @@ def run_epoch(model, loader, optimizer, device, scaler=None,
         imgs = imgs.to(device); labels = labels.to(device); feats = feats.to(device)
         optimizer.zero_grad(set_to_none=True)
 
-        def _step():
+        def _step(imgs=imgs, labels=labels, feats=feats):
             logits, pred_feats, recon = model(imgs)
             loss = cls_loss_fn(logits, labels) \
                  + feat_weight * feat_loss_fn(pred_feats, feats) \
@@ -158,7 +164,7 @@ def analyze(model, device, func_type: str | None = None, x=None, y=None,
         if y is None:
             y, true_feats = generate_function_2d(func_type, x)
         else:
-            true_feats = None
+            pass
         img = plot_to_image_2d(x, y)
 
     t = torch.tensor(img).unsqueeze(0).unsqueeze(0).to(device)

@@ -10,7 +10,6 @@ import torch.nn as nn
 
 from .data import NUM_CLASSES, NUM_FEATURES
 
-
 # ── Building blocks ──────────────────────────────────────────────────────────
 
 class SEBlock(nn.Module):

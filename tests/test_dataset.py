@@ -2,9 +2,15 @@
 import numpy as np
 
 from src.data import (
-    FUNCTION_TYPES, FUNCTION_TYPES_2D, FUNCTION_TYPES_3D,
-    NUM_CLASSES, NUM_FEATURES, IMG_SIZE,
-    FunctionDataset, generate_function_2d, generate_function_3d,
+    FUNCTION_TYPES,
+    FUNCTION_TYPES_2D,
+    FUNCTION_TYPES_3D,
+    IMG_SIZE,
+    NUM_CLASSES,
+    NUM_FEATURES,
+    FunctionDataset,
+    generate_function_2d,
+    generate_function_3d,
 )
 
 
