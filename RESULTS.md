@@ -1,6 +1,19 @@
 # Results
 
-Numbers reported here are tied to a specific commit so anyone can reproduce them exactly. Update this file whenever the model architecture or training schedule changes.
+A reproducible benchmark template. Run the comparison locally and paste your numbers into the **Reference Run** section below to pin them to a specific commit and hardware configuration.
+
+The dataset is regenerated from scratch each run with no fixed seed, so accuracy will drift by ~1 pp between runs. Pin a seed in `src/train.py` if you need bit-reproducibility.
+
+---
+
+## How to reproduce
+
+```bash
+pip install -e ".[dev]"
+python -m src.train --compare
+```
+
+The script writes a per-epoch log, the `=== Baseline vs Full ===` summary, `training_curves.png`, and `predictions.png`. Paste the tail of the log into the **Training Log** section below.
 
 ---
 
@@ -9,16 +22,16 @@ Numbers reported here are tied to a specific commit so anyone can reproduce them
 | Field | Value |
 |-------|-------|
 | Commit | _(fill in after training)_ |
-| Date | 2026-05-12 |
+| Date | _(fill in)_ |
 | Hardware | _(e.g. NVIDIA RTX 3060 12 GB / AMD Ryzen 7 5800X)_ |
 | PyTorch | 2.x, mixed precision (AMP) on CUDA |
 | Training samples | 8,000 |
 | Validation samples | 1,600 |
 | Epochs | 30 (full model) / 30 (baseline) |
 | Batch size | 64 |
-| Optimiser | AdamW — lr=5e-4, weight\_decay=1e-3 |
+| Optimiser | AdamW — lr=5e-4, weight_decay=1e-3 |
 | LR schedule | CosineAnnealingLR |
-| Random seed | _(not pinned; see note below)_ |
+| Random seed | _(not pinned by default; see note above)_ |
 
 ---
 
@@ -29,14 +42,6 @@ Numbers reported here are tied to a specific commit so anyone can reproduce them
 | Baseline (1 conv + linear) | ~17 K | _(fill in)_ |
 | FunctionCNN (ResNet + SE + multi-task) | ~10 M | _(fill in)_ |
 | Gain | — | _(fill in pp)_ |
-
-Reproduce with:
-
-```bash
-python -m src.train --compare
-```
-
-The script prints a per-epoch log followed by a `=== Baseline vs Full ===` summary table. Paste the last few lines of that output in the **Training Log** section below.
 
 ---
 
@@ -50,6 +55,6 @@ The script prints a per-epoch log followed by a `=== Baseline vs Full ===` summa
 
 ## Notes
 
-- The dataset is fully synthetic and regenerated on every run. Accuracy will drift by ~1 pp between runs unless a fixed seed is set in `src/train.py`.
 - Mixed precision is enabled automatically on CUDA and disabled on CPU. CPU runs are roughly 10× slower but produce comparable final accuracy.
-- The reconstruction loss (`MSE`) serves as a regulariser only and is not reported as a standalone metric. To evaluate it directly, add an MSE metric to the `evaluate()` function in `src/train.py`.
+- The reconstruction loss (`MSE`) serves as a regulariser only and is not reported as a standalone metric. To evaluate it directly, add an MSE term to `evaluate()` in `src/train.py`.
+- `training_curves.png` and `predictions.png` at the repo root are committed sample outputs from a prior run; running `--compare` will overwrite them with your run's results.

@@ -1,6 +1,6 @@
 # FunctionCNN
 
-[![CI](https://github.com/raahimnawaz/func_class_-cnn/actions/workflows/ci.yml/badge.svg)](https://github.com/raahimnawaz/func_class_-cnn/actions/workflows/ci.yml)
+[![CI](https://github.com/raahimnawaz/function-classifier-cnn/actions/workflows/ci.yml/badge.svg)](https://github.com/raahimnawaz/function-classifier-cnn/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![PyTorch 2.x](https://img.shields.io/badge/PyTorch-2.x-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -11,7 +11,7 @@ A multi-task convolutional neural network that takes a **rendered plot of a math
 - **Detects** up to 9 binary structural properties — periodic, monotone, bounded, symmetric, saddle point, and more
 - **Reconstructs** the input plot as an auxiliary self-supervised task that regularises the shared representation
 
-The backbone is a five-block **ResNet with Squeeze-and-Excitation channel attention**, trained end-to-end on synthetically generated 128×128 grayscale images. The dataset is effectively infinite — every sample is freshly randomised at generation time, so the model never sees the same plot twice.
+The backbone is a five-block **ResNet with Squeeze-and-Excitation channel attention**, trained end-to-end on synthetically generated 128×128 grayscale images. The training and validation sets are regenerated from scratch each run with fresh random parameters per sample, so the model never reuses a dataset across runs — and the generators can produce an unbounded variety of samples on demand.
 
 ---
 
@@ -46,7 +46,7 @@ The backbone is a five-block **ResNet with Squeeze-and-Excitation channel attent
 - ResNet-style backbone with Squeeze-and-Excitation channel attention
 - Mixed-precision training (`torch.amp`) for ~2× throughput on CUDA with no accuracy loss
 - Cosine LR schedule + AdamW — no per-run hyperparameter tuning required
-- Fully synthetic, infinitely scalable dataset
+- Fully synthetic, parametrically generated dataset (no scraped or licensed data)
 - Interactive Gradio web demo: sketch a curve, get a prediction
 - GitHub Actions CI: Ruff linting + Pytest on every push and pull request
 
@@ -97,7 +97,7 @@ Dropout rates are graduated (0.05 → 0.25) through the backbone blocks; the sha
 
 ## Dataset
 
-Every sample is generated on-the-fly from one of 16 parametrically randomised function families:
+`FunctionDataset` materialises a fixed-size set of samples at construction time. Each sample is drawn from one of 16 parametrically randomised function families:
 
 | Dimension | Function families |
 |-----------|-------------------|
@@ -122,7 +122,7 @@ Each image is labelled with:
 | 7 | `is_symmetric` |
 | 8 | `has_saddle_point` |
 
-Default split: **8,000 training samples** and **1,600 validation samples** (configurable via `NUM_TRAIN` / `NUM_VAL` in `src/train.py`).
+Default split: **8,000 training samples** and **1,600 validation samples** (configurable via `NUM_TRAIN` / `NUM_VAL` in `src/train.py`). The sets are regenerated from scratch each run with no fixed seed, so two consecutive runs see different samples drawn from the same parametric distribution.
 
 ---
 
@@ -229,7 +229,7 @@ Tests are CPU-only and complete in a few seconds. They run automatically on ever
 
 **Graduated dropout** — Dropout rates increase from 0.05 in the first backbone block to 0.25 in the fifth, and reach 0.4 in the shared FC trunk. This concentrates regularisation where the network is widest and the risk of co-adaptation is highest.
 
-**Synthetic data** — Every sample is freshly randomised at generation time, making the effective dataset size unlimited. The model never memorises specific plots, and the generation cost is paid once per epoch.
+**Synthetic data** — Building the dataset from parametric generators (rather than scraped plots) means labels are correct by construction, the input distribution is fully controlled, and the same generators can supply an unbounded variety of new samples. The dataset is materialised once at construction time, so generation cost is paid up-front rather than per batch — the trade-off is that the model sees the same `NUM_TRAIN` samples on every epoch within a run, while seeing a different draw on each new run.
 
 **Mixed precision (AMP)** — Achieves ~2× training throughput on modern NVIDIA GPUs. BatchNorm and residual paths absorb fp16 numerical noise well, so accuracy is unaffected.
 
@@ -275,18 +275,20 @@ python -m src.train --compare # full model + baseline, side-by-side
 
 ## Results
 
-See [RESULTS.md](RESULTS.md) for pinned benchmark numbers tied to a specific commit, hardware details, and a full training log.
+The two-model comparison is part of the training CLI — running it locally produces a head-to-head accuracy table plus the training curves and prediction samples shown above.
 
-| Model | Parameters | Best val accuracy (16-class) |
-|-------|-----------|------------------------------|
-| Baseline (1 conv + linear) | ~17 K | see [RESULTS.md](RESULTS.md) |
-| FunctionCNN (ResNet + SE + multi-task) | ~10 M | see [RESULTS.md](RESULTS.md) |
+| Model | Parameters |
+|-------|-----------|
+| Baseline (1 conv + linear) | ~17 K |
+| FunctionCNN (ResNet + SE + multi-task) | ~10 M |
 
 Reproduce the comparison with:
 
 ```bash
 python -m src.train --compare
 ```
+
+The script writes a per-epoch log, a final `=== Baseline vs Full ===` summary, `training_curves.png`, and `predictions.png`. See [RESULTS.md](RESULTS.md) for the reference benchmark template — fill in the trailing log block after a run to pin numbers to a specific commit and hardware configuration.
 
 ---
 
