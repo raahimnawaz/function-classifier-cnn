@@ -1,30 +1,34 @@
 # Results
 
-Numbers reported here are tied to a specific run so anyone can reproduce
-them. Update this file when the model or training schedule changes.
+Numbers reported here are tied to a specific commit so anyone can reproduce them exactly. Update this file whenever the model architecture or training schedule changes.
 
-## Reference run
+---
 
-| Field                | Value                                       |
-| -------------------- | ------------------------------------------- |
-| Commit               | _fill in once committed_                    |
-| Date                 | 2026-05-12                                  |
-| Hardware             | _e.g. NVIDIA RTX 3060 12 GB, AMD Ryzen 7_   |
-| PyTorch              | 2.x, mixed precision (AMP) on CUDA          |
-| Train / val samples  | 8000 / 1600 (`NUM_TRAIN` / `NUM_VAL`)       |
-| Epochs               | 30 (full) / 10 (baseline)                   |
-| Batch size           | 64                                          |
-| Optimizer            | AdamW, lr=5e-4, weight_decay=1e-3           |
-| LR schedule          | CosineAnnealingLR                           |
-| Seed                 | _not pinned in current code_                |
+## Reference Run
 
-## Headline numbers
+| Field | Value |
+|-------|-------|
+| Commit | _(fill in after training)_ |
+| Date | 2026-05-12 |
+| Hardware | _(e.g. NVIDIA RTX 3060 12 GB / AMD Ryzen 7 5800X)_ |
+| PyTorch | 2.x, mixed precision (AMP) on CUDA |
+| Training samples | 8,000 |
+| Validation samples | 1,600 |
+| Epochs | 30 (full model) / 30 (baseline) |
+| Batch size | 64 |
+| Optimiser | AdamW — lr=5e-4, weight\_decay=1e-3 |
+| LR schedule | CosineAnnealingLR |
+| Random seed | _(not pinned; see note below)_ |
 
-| Model                                       | Params | Best val acc |
-| ------------------------------------------- | ------ | ------------ |
-| Baseline (1 conv + linear)                  | ~17 K  | _fill in_    |
-| FunctionCNN (ResNet + SE + multi-task)      | ~10 M  | _fill in_    |
-| Gain                                        | —      | _fill in pp_ |
+---
+
+## Benchmark
+
+| Model | Parameters | Best val accuracy (16-class) |
+|-------|-----------|------------------------------|
+| Baseline (1 conv + linear) | ~17 K | _(fill in)_ |
+| FunctionCNN (ResNet + SE + multi-task) | ~10 M | _(fill in)_ |
+| Gain | — | _(fill in pp)_ |
 
 Reproduce with:
 
@@ -32,20 +36,20 @@ Reproduce with:
 python -m src.train --compare
 ```
 
-The script prints the per-epoch log and final `Baseline vs Full` table to
-stdout. Paste the last ~5 lines of that log under "Training log" below.
+The script prints a per-epoch log followed by a `=== Baseline vs Full ===` summary table. Paste the last few lines of that output in the **Training Log** section below.
 
-## Training log
+---
+
+## Training Log
 
 ```
-(paste the tail of `python -m src.train --compare` output here)
+(paste the tail of `python -m src.train --compare` here)
 ```
+
+---
 
 ## Notes
 
-- The dataset is fully synthetic and regenerated on every run; numbers will
-  drift by ~1 pp between runs unless a seed is pinned.
-- Mixed precision is automatic on CUDA, off on CPU. CPU runs are ~10x slower
-  but produce comparable accuracy.
-- Reconstruction loss is used as a regulariser, not evaluated directly. If
-  you want to report it, add an MSE metric in `evaluate()`.
+- The dataset is fully synthetic and regenerated on every run. Accuracy will drift by ~1 pp between runs unless a fixed seed is set in `src/train.py`.
+- Mixed precision is enabled automatically on CUDA and disabled on CPU. CPU runs are roughly 10× slower but produce comparable final accuracy.
+- The reconstruction loss (`MSE`) serves as a regulariser only and is not reported as a standalone metric. To evaluate it directly, add an MSE metric to the `evaluate()` function in `src/train.py`.

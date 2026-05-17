@@ -40,7 +40,7 @@ dev = [
 function-cnn-train = "src.train:main"
 
 [project.urls]
-Homepage = "https://github.com/your-username/function-cnn"
+Homepage = "https://github.com/raahimnawaz/func_class_-cnn"
 
 [tool.setuptools]
 packages = ["src"]
