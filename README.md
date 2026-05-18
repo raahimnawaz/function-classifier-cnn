@@ -15,8 +15,7 @@ The backbone is a five-block **ResNet with Squeeze-and-Excitation channel attent
 
 ---
 
-![Sample predictions](predictions.png)
-*Row 1: input plot — Row 2: predicted class (green = correct, red = wrong) — Row 3: decoder reconstruction from the shared latent*
+> **Status:** architecture + training pipeline + tests landed; final benchmark numbers and prediction figures pending a clean 30-epoch run. Reproduce with `python -m src.train` — see *Training* below.
 
 ---
 
@@ -182,9 +181,7 @@ function-cnn-train --compare --epochs 50
 | Mixed precision | Automatic on CUDA |
 | DataLoader workers | `min(cpu_count, 8)` |
 
-The best checkpoint (by validation accuracy) is saved to `function_cnn.pth` during training. Training curves are written to `training_curves.png` at the end of each full or compare run:
-
-![Training curves](training_curves.png)
+The best checkpoint (by validation accuracy) is saved to `function_cnn.pth` during training. Training curves and a sample-prediction grid are written to `training_curves.png` and `predictions.png` at the end of each full or compare run.
 
 ---
 
