@@ -1,0 +1,2 @@
+# Keep notebooks out of GitHub language stats so Python shows as the primary language
+*.ipynb linguist-documentation
