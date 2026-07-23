@@ -15,7 +15,13 @@ The backbone is a five-block **ResNet with Squeeze-and-Excitation channel attent
 
 ---
 
-> **Status:** architecture + training pipeline + tests landed; final benchmark numbers and prediction figures pending a clean 30-epoch run. Reproduce with `python -m src.train` — see *Training* below.
+> **Headline result (seeded 30-epoch run, GTX 980 Ti):** **93.8 %** 16-class
+> accuracy (99.0 % on 3D surfaces, 88.5 % on 2D curves) and **0.996** macro-F1 on
+> the 9 structural properties — versus **64.2 %** for a 1-conv baseline on the same
+> data (**+29.5 pp**). Fifteen of sixteen classes score 96–100 %; nearly the whole
+> error budget is the *expected* sine↔cosine ambiguity (`sin(x+π/2) = cos(x)`).
+> Full numbers, per-class breakdown, and figures in [RESULTS.md](RESULTS.md).
+> Reproduce with `python -m src.train --compare` (seed defaults to 42).
 
 ---
 
@@ -43,7 +49,7 @@ The backbone is a five-block **ResNet with Squeeze-and-Excitation channel attent
 - 9-dimensional binary property detector encoding interpretable structural attributes
 - Auxiliary convolutional decoder for self-supervised regularisation
 - ResNet-style backbone with Squeeze-and-Excitation channel attention
-- Mixed-precision training (`torch.amp`) for ~2× throughput on CUDA with no accuracy loss
+- Mixed-precision training (`torch.amp`) for ~2× throughput on tensor-core GPUs (Volta+), with automatic fp32 fallback on older cards and CPU
 - Cosine LR schedule + AdamW — no per-run hyperparameter tuning required
 - Fully synthetic, parametrically generated dataset (no scraped or licensed data)
 - Interactive Gradio web demo: sketch a curve, get a prediction
@@ -121,7 +127,7 @@ Each image is labelled with:
 | 7 | `is_symmetric` |
 | 8 | `has_saddle_point` |
 
-Default split: **8,000 training samples** and **1,600 validation samples** (configurable via `NUM_TRAIN` / `NUM_VAL` in `src/train.py`). The sets are regenerated from scratch each run with no fixed seed, so two consecutive runs see different samples drawn from the same parametric distribution.
+Default split: **8,000 training samples** and **1,600 validation samples** (configurable via `NUM_TRAIN` / `NUM_VAL` in `src/train.py`). The sets are regenerated from scratch each run, seeded by `--seed` (default **42**) so the draw is reproducible; pass a different seed to see a fresh draw from the same parametric distribution.
 
 ---
 
@@ -145,7 +151,7 @@ For GPU-accelerated training, install a CUDA-enabled PyTorch wheel separately (s
 
 ```bash
 # Train the full model
-# Writes: function_cnn.pth, training_curves.png, predictions.png
+# Writes: function_cnn.pth, metrics.json, figures/*.png
 python -m src.train
 
 # Train the 1-layer baseline only
@@ -181,7 +187,7 @@ function-cnn-train --compare --epochs 50
 | Mixed precision | Automatic on CUDA |
 | DataLoader workers | `min(cpu_count, 8)` |
 
-The best checkpoint (by validation accuracy) is saved to `function_cnn.pth` during training. Training curves and a sample-prediction grid are written to `training_curves.png` and `predictions.png` at the end of each full or compare run.
+The best checkpoint (by validation accuracy) is saved to `function_cnn.pth` during training. At the end of each full or compare run, the training curves, sample-prediction grid, confusion matrix, and per-property F1 chart are written under `figures/`, and the full metrics (including the 16×16 confusion matrix) are written to `metrics.json`.
 
 ---
 
@@ -228,7 +234,7 @@ Tests are CPU-only and complete in a few seconds. They run automatically on ever
 
 **Synthetic data** — Building the dataset from parametric generators (rather than scraped plots) means labels are correct by construction, the input distribution is fully controlled, and the same generators can supply an unbounded variety of new samples. The dataset is materialised once at construction time, so generation cost is paid up-front rather than per batch — the trade-off is that the model sees the same `NUM_TRAIN` samples on every epoch within a run, while seeing a different draw on each new run.
 
-**Mixed precision (AMP)** — Achieves ~2× training throughput on modern NVIDIA GPUs. BatchNorm and residual paths absorb fp16 numerical noise well, so accuracy is unaffected.
+**Mixed precision (AMP)** — Achieves ~2× training throughput on tensor-core GPUs (Volta and newer). BatchNorm and residual paths absorb fp16 numerical noise well, so accuracy is unaffected. AMP is gated on compute capability ≥ 7.0 and falls back to fp32 on older cards (e.g. Maxwell), where fp16 throughput is *worse* than fp32 — enabling it there would slow training down, not speed it up.
 
 **Cosine LR schedule + AdamW** — Robust defaults that do not require per-experiment tuning. Cosine annealing prevents the large-LR overshoot that costs the final few percent of accuracy at the end of training.
 
@@ -249,8 +255,12 @@ Tests are CPU-only and complete in a few seconds. They run automatically on ever
 ├── function_cnn.py               # backwards-compatibility shim → re-exports from src/
 ├── function_cnn.ipynb            # interactive notebook and demo
 ├── gradio_demo.py                # Gradio sketch-a-curve web demo
-├── training_curves.png           # generated by src.train
-├── predictions.png               # generated by src.train
+├── metrics.json                  # full benchmark metrics from the reference run
+├── figures/                      # generated by src.train (--compare)
+│   ├── training_curves.png
+│   ├── predictions.png
+│   ├── confusion_matrix.png
+│   └── property_f1.png
 ├── src/
 │   ├── __init__.py
 │   ├── data.py                   # function generators and FunctionDataset
@@ -272,20 +282,33 @@ python -m src.train --compare # full model + baseline, side-by-side
 
 ## Results
 
-The two-model comparison is part of the training CLI — running it locally produces a head-to-head accuracy table plus the training curves and prediction samples shown above.
+Reference run: seeded (`--seed 42`), 30 epochs, 8,000 train / 1,600 val, on a GTX 980 Ti. Full detail in [RESULTS.md](RESULTS.md).
 
-| Model | Parameters |
-|-------|-----------|
-| Baseline (1 conv + linear) | ~17 K |
-| FunctionCNN (ResNet + SE + multi-task) | ~10 M |
+| Model | Parameters | Best val accuracy (16-class) |
+|-------|-----------|------------------------------|
+| Baseline (1 conv + linear) | ~17 K | 64.2 % |
+| **FunctionCNN** (ResNet + SE + multi-task) | 11.3 M | **93.8 %** |
+| Gain | — | **+29.5 pp** |
 
-Reproduce the comparison with:
+The architecture more than closes the gap a single conv layer leaves open. Breaking the full model down:
+
+| Metric | Value |
+|--------|-------|
+| 16-class accuracy | **93.8 %** |
+| &nbsp;&nbsp;→ 3D surfaces | 99.0 % |
+| &nbsp;&nbsp;→ 2D curves | 88.5 % |
+| Property macro-F1 (9 labels) | **0.996** |
+| Property exact-match (all 9 right) | 99.1 % |
+
+**Where the error lives.** Fifteen of sixteen classes score 96–100 %. Almost the entire miss is a single *expected* confusion — **sine (56 %) ↔ cosine (53 %)** — because a phase-shifted sine is a cosine (`sin(x + π/2) = cos(x)`) and the generators draw a random phase for both, so the two families genuinely overlap. That one ambiguity is what pulls the 2D number below the 3D one; it's the honest ceiling of the task, not a training failure. It's fixable in the *generator*, not the model: constrain the phase so sine and cosine draw from disjoint offset ranges, or collapse them into one `sinusoid` class with the **phase offset as a continuous regression target** — a well-posed problem instead of an unwinnable one.
+
+![Confusion matrix](figures/confusion_matrix.png)
+
+Reproduce the full comparison (per-epoch log, `=== Baseline vs Full ===` summary, `metrics.json`, and all four figures under `figures/`) with:
 
 ```bash
 python -m src.train --compare
 ```
-
-The script writes a per-epoch log, a final `=== Baseline vs Full ===` summary, `training_curves.png`, and `predictions.png`. See [RESULTS.md](RESULTS.md) for the reference benchmark template — fill in the trailing log block after a run to pin numbers to a specific commit and hardware configuration.
 
 ---
 

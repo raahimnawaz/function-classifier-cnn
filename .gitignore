@@ -23,9 +23,12 @@ env/
 *.onnx
 *.ckpt
 
-# Generated figures (regenerated at the end of training)
-training_curves.png
-predictions.png
+# Committed benchmark figures live in figures/ and are tracked on purpose.
+# Ignore only stray figures written to the repo root by ad-hoc runs.
+/training_curves.png
+/predictions.png
+/confusion_matrix.png
+/property_f1.png
 
 # Tooling caches
 .pytest_cache/
